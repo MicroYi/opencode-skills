@@ -1,6 +1,6 @@
 ---
 name: maintain-agents
-description: 审查并维护 AGENTS.md——支持 session 收工时增量更新，也支持对现有内容做完整性审查
+description: 审查并维护 AGENTS.md——支持 session 收工时增量更新，也支持对现有内容做完整性审查。触发词："收工"、"结束"、"更新规则"、"sync agents"、"审查 agents"、"review agents"、"agents 健康检查"。
 ---
 
 ## 触发时机
@@ -49,12 +49,6 @@ description: 审查并维护 AGENTS.md——支持 session 收工时增量更新
 2. 如果没有合适的 section，**建议新增一个**，但命名和层级必须与已有结构一致
 3. 绝不往不相关的 section 塞内容
 
-常见的映射参考（仅供参考，以实际 section 为准）：
-- 架构决策 → 可能叫 "架构决策"、"Non-obvious gotchas"、"Project shape"，或其他
-- 命令纠错 → 可能叫 "Commands agent will guess wrong"，或类似
-- 代码规范 → 可能叫 "Coding discipline"、"代码规范"，或嵌在其他 section 里
-- 删除/重命名模块 → 通常归入 gotchas 或架构决策类 section
-
 ### Step 4: 生成变更提案
 
 对每个变更条目，生成具体的修改内容：
@@ -96,41 +90,31 @@ description: 审查并维护 AGENTS.md——支持 session 收工时增量更新
 
 ### Step 1: 读取现有内容
 
-读取 AGENTS.md，列出所有现有 section。如果文件不存在，进入"从零创建"流程——直接跳到 Step 2 用类别表引导用户逐项填写。
+读取 AGENTS.md，列出所有现有 section。如果文件不存在，进入"从零创建"流程——用推荐模板（见 references/template.md）引导用户逐项填写。
 
-### Step 2: 对照关键信息类别
+### Step 2: 对照推荐模板
 
-以下是一个成熟的 AGENTS.md 通常应覆盖的信息类别。**不是每个项目都需要全部，但每个类别都值得考虑：**
+读取 references/template.md 获取推荐的 section 结构和检查清单。模板基于实战验证的成熟 AGENTS.md 案例，包含：
 
-| 类别 | 目的 | 典型 section 名 |
-|------|------|------------------|
-| **上下文压缩优先级** | 长对话压缩时保留什么、丢弃什么的排序规则 | Compact instructions |
-| **自主决策规则** | 什么时候直接做、什么时候停下来问用户 | Operating mode |
-| **编码纪律** | 减少 LLM 常见编码错误的硬约束（简洁优先、手术式修改、目标驱动） | Coding discipline |
-| **必读文档** | 新 session 启动时必须读的文件及顺序 | Read first |
-| **项目结构概述** | 一两行描述项目是什么、进程模型、怎么跑 | Project shape |
-| **防猜错命令** | agent 容易猜错的 CLI 命令、入口点、环境变量 | Commands agent will guess wrong |
-| **非显而易见的坑** | 项目特有的 gotcha——不读就会踩的坑 | Non-obvious gotchas |
-| **架构决策记录** | 重大决策及原因，防止未来 agent 重新讨论已决事项 | 架构决策 / ADR |
-| **范围边界** | 明确"故意不做"的事，防止 agent 过度发挥 | Scope / Out of scope |
-| **工具/依赖约束** | 硬性禁止或必须使用的工具、库、UI 模式 | Hard bans / Constraints |
+- 每个推荐 section 的用途说明
+- 好 vs 坏的写法示例
+- 按项目类型（编码/知识库/多人协作）的优先级建议
 
-### Step 3: 识别缺口
+对比现有 AGENTS.md 与模板，识别：
+1. 哪些 section 已覆盖（可能名字不同但内容等价）
+2. 哪些 section 完全缺失
+3. 哪些 section 有但内容过于空泛或存在结构问题
 
-对比现有 section 和上述类别：
-1. 哪些类别已经被覆盖（可能名字不同但内容等价）？
-2. 哪些类别完全缺失？
-3. 哪些类别有 section 但内容过于空泛？
+### Step 3: 结构质量检查
 
-### Step 4: 评估项目实际需要
+除了内容缺失，还要检查已有 section 的结构健康度：
 
-不是所有类别对所有项目都重要。评估标准：
-- **编码项目**：编码纪律、防猜错命令、gotchas 通常是高优先级
-- **知识库/文档项目**：上下文压缩、必读文档更重要
-- **多人协作项目**：架构决策记录、范围边界更关键
-- **有 CI/CD 的项目**：命令、环境变量、测试规范是必须的
+- **Gotchas 是否分组？** 如果 gotchas 超过 10 条且未按关注点分组（如 wire / runtime / persistence / frontend），建议分组。长 flat list 会导致 agent 在 context 衰减时遗忘早期条目。
+- **是否有双源同步问题？** 如果某个 section 的内容在其他文件中也有一份（如 UI 规范同时写在 AGENTS.md 和 .impeccable.md），建议改为引用而非复制。
+- **Read first 是否有路由？** 如果项目有多种任务类型（前端/后端/SSE/持久层），建议加 task-type → file 路由表，而不是一个 flat 列表。
+- **说明文字 vs 可执行指令比例** — 如果某个 section 的说明文字（agent 自己能发现的）占比超过内容的 50%，建议精简。
 
-### Step 5: 生成审查报告
+### Step 4: 生成审查报告
 
 输出格式：
 
@@ -147,18 +131,23 @@ description: 审查并维护 AGENTS.md——支持 session 收工时增量更新
   2. [中] 上下文压缩优先级 — 长 session 后容易丢失关键架构信息
   3. [低] 范围边界 — 目前项目范围比较明确
 
+🔧 结构改进建议：
+  1. Gotchas 分组 — 当前 15 条 flat list，建议按 wire/runtime/persistence 分组
+  2. Frontend 规范去重 — 改为引用 .impeccable.md 而非复制
+
 ✅ 不需要：
   - 工具硬性禁止 — 项目无特殊禁令
 
 要我帮你生成缺失 section 的草稿吗？
 ```
 
-### Step 6: 按需生成草稿
+### Step 5: 按需生成草稿
 
 用户确认需要补充的类别后：
 1. 扫描项目代码和现有文档，提取相关信息
-2. 生成 section 草稿，匹配已有 AGENTS.md 的风格
-3. 展示给用户确认后写入
+2. 参考 references/template.md 中对应 section 的写法示例
+3. 生成 section 草稿，匹配已有 AGENTS.md 的风格
+4. 展示给用户确认后写入
 
 ---
 
