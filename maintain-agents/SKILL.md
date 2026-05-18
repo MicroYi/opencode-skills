@@ -1,6 +1,6 @@
 ---
 name: maintain-agents
-description: 在 coding session 结束时自动审查并更新 AGENTS.md，归档旧的 session 日志，确保项目规则永远不过期
+description: 在 coding session 结束时自动审查并更新 AGENTS.md，确保项目规则与实际代码保持同步
 ---
 
 ## 触发时机
@@ -11,9 +11,14 @@ description: 在 coding session 结束时自动审查并更新 AGENTS.md，归�
 
 ## 执行步骤
 
-### Step 1: 读取当前 AGENTS.md
+### Step 1: 读取并理解当前 AGENTS.md
 
-使用 Read 工具读取项目根目录的 AGENTS.md。如果不存在，提醒用户先运行 /init 或手动创建。
+读取项目根目录的 AGENTS.md。如果不存在，提醒用户先创建。
+
+**关键：不要假设任何固定的 section 结构。** 每个项目的 AGENTS.md 组织方式不同。你必须：
+1. 列出当前所有 `##` level 的 section 及其用途
+2. 理解每个 section 的写作风格（命令式？叙述式？列表？）
+3. 后续所有修改必须匹配已有风格和结构
 
 ### Step 2: 回顾本次 session
 
@@ -21,39 +26,43 @@ description: 在 coding session 结束时自动审查并更新 AGENTS.md，归�
 
 - [ ] 新增或修改了架构决策（如换了依赖、改了数据模型、调整了 API 设计）
 - [ ] 引入了新的依赖或工具
-- [ ] 发现了新的技术债务
-- [ ] 修改或新增了代码规范
-- [ ] 范围边界发生变化（新增了"故意不做"的事项，或把之前不做的事提上日程）
-- [ ] 修复了之前记录的技术债（需要从列表中勾掉）
+- [ ] 发现了 agent 容易猜错的命令或行为
+- [ ] 修改或新增了代码规范 / 编码纪律
+- [ ] 发现了新的 gotcha（非显而易见的坑）
+- [ ] 删除或重命名了重要模块/文件/API
+- [ ] 范围边界发生变化
 
 如果以上全部为否，告知用户"本次 session 无需更新 AGENTS.md"，流程结束。
 
-### Step 3: 生成变更提案
+### Step 3: 定位变更归属
 
-对每个需要更新的条目，生成具体的 diff：
+对每个需要记录的变更，在 **现有 section 结构** 中找到最合适的归属位置：
 
-- **架构决策**：追加到 `## 架构决策` section，格式为 `- YYYY-MM-DD: 决策内容 — 原因`
-- **技术债**：追加到 `## 已知技术债`，格式为 `- [ ] 描述`
-- **代码规范**：追加或修改 `## 代码规范` 中的对应条目
-- **范围边界**：更新 `## 范围边界` 的"现在做"或"故意不做"列表
-- **Session 日志**：在 `## Session 日志` 追加一行，格式为 `- YYYY-MM-DD: 一句话摘要`
+1. 扫描已有 section，判断变更内容属于哪个 section
+2. 如果没有合适的 section，**建议新增一个**，但命名和层级必须与已有结构一致
+3. 绝不往不相关的 section 塞内容
 
-### Step 4: 归档旧日志
+常见的映射参考（仅供参考，以实际 section 为准）：
+- 架构决策 → 可能叫 "架构决策"、"Non-obvious gotchas"、"Project shape"，或其他
+- 命令纠错 → 可能叫 "Commands agent will guess wrong"，或类似
+- 代码规范 → 可能叫 "Coding discipline"、"代码规范"，或嵌在其他 section 里
+- 删除/重命名模块 → 通常归入 gotchas 或架构决策类 section
 
-检查 `## Session 日志` 中的条目：
-- 保留最近 7 天的条目
-- 超过 7 天的条目移动到 `docs/decisions/YYYY-MM.md`
-- 如果 `docs/decisions/` 目录不存在，创建它
-- 归档文件按月份组织，追加写入不覆盖
+### Step 4: 生成变更提案
 
-### Step 5: 检查文件健康度
+对每个变更条目，生成具体的修改内容：
 
-- 如果 AGENTS.md 超过 **400 行**：
-  - 警告用户文件过长
-  - 建议将详细规范（如测试指南、API 标准）拆到 `docs/` 下独立文件
-  - 建议在 `opencode.json` 的 `instructions` 字段引用这些文件
-- 如果某个 section 超过 **50 行**：
-  - 建议该 section 拆为独立文件并用 instructions 引用
+- **追加到已有 section**：匹配该 section 现有的格式（bullet style、日期格式、语气）
+- **新增 section**：给出完整的 section 标题和初始内容，放在逻辑上合理的位置
+- **修改已有条目**：如果新信息使旧条目过时（如模块被删除/重命名），更新旧条目而不是追加矛盾信息
+
+### Step 5: 检查一致性
+
+在提交变更前，检查：
+
+- **矛盾检测**：新内容是否与 AGENTS.md 中已有内容矛盾？如果是，标记出来并建议同时更新旧内容
+- **过时引用**：是否有引用了已删除文件/模块/API 的条目？标记建议清理
+- **文件健康度**：如果 AGENTS.md 超过 400 行，建议将详细规范拆到独立文件
 
 ### Step 6: 输出并确认
 
@@ -62,10 +71,10 @@ description: 在 coding session 结束时自动审查并更新 AGENTS.md，归�
 ```
 📋 AGENTS.md 变更提案：
 
-[架构决策] + 2026-05-17: 从 REST 迁移到 tRPC — 全栈类型安全
-[技术债]   + [ ] user 表缺少 soft delete，需要加 deleted_at 字段
-[Session]  + 2026-05-17: 重构 API 层，REST → tRPC，更新路由结构
-[归档]     3 条旧日志 → docs/decisions/2026-04.md
+[Section名] + 新增内容概述
+[Section名] ~ 修改: 旧内容 → 新内容
+[新Section] + 建议新增 "## Section名"
+[矛盾]      ! 第XX行与新变更矛盾，建议同时更新
 
 确认更新？(y/n)
 ```
@@ -74,15 +83,16 @@ description: 在 coding session 结束时自动审查并更新 AGENTS.md，归�
 
 ## 写入规范
 
-- 所有日期使用 ISO 格式：YYYY-MM-DD
-- 架构决策必须包含"原因"，用 ` — ` 分隔
-- 技术债用 `- [ ]` 未完成 / `- [x]` 已完成
-- 保持 AGENTS.md 整体用命令式语气
-- 不要删除任何现有内容，只追加或标记完成
+- 匹配已有 AGENTS.md 的日期格式、语气、列表风格
+- 如果已有文件没有日期标注习惯，不要强加日期
+- 不要删除任何现有内容，除非它与新变更直接矛盾且用户确认
+- 架构决策类变更必须包含原因
 
 ## 不要做的事
 
+- 不要假设固定的 section 结构——每个项目不同
 - 不要自动执行写入，必须等用户确认
-- 不要修改代码文件，只维护 AGENTS.md 和 docs/decisions/
+- 不要修改代码文件，只维护 AGENTS.md
 - 不要编造决策，只记录本次 session 中实际发生的事
 - 不要把临时调试信息写入 AGENTS.md
+- 不要重新组织已有 section 的顺序或命名
